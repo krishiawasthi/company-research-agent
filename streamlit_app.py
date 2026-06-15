@@ -8,8 +8,7 @@ from langchain.tools import Tool
 from langchain import hub
 from langchain_community.tools import DuckDuckGoSearchRun
 
-# ── Load API key ──────────────────────────────────────────────────────
-load_dotenv()
+# load_dotenv()  # only needed locally — Hugging Face injects secrets automatically
 
 # ── Page config ───────────────────────────────────────────────────────
 st.set_page_config(
