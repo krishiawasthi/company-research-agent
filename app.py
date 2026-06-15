@@ -1,0 +1,147 @@
+import os
+import streamlit as st
+from dotenv import load_dotenv
+
+from langchain_groq import ChatGroq
+from langchain.agents import AgentExecutor, create_react_agent
+from langchain.tools import Tool
+from langchain import hub
+from langchain_community.tools import DuckDuckGoSearchRun
+
+# ── Load API key ──────────────────────────────────────────────────────
+load_dotenv()
+
+# ── Page config ───────────────────────────────────────────────────────
+st.set_page_config(
+    page_title="Company Research Agent",
+    page_icon="🤖",
+    layout="wide"
+)
+
+st.title("🤖 Company Research Agent")
+st.write("Powered by LangChain + Groq (Llama 3.3) · Enter a company name and the agent researches it autonomously.")
+
+# ── Sidebar ───────────────────────────────────────────────────────────
+with st.sidebar:
+    st.header("⚙️ Settings")
+    max_iter = st.slider(
+        "Max agent iterations",
+        min_value=3,
+        max_value=15,
+        value=8,
+        help="How many steps the agent can take. More = thorough but slower."
+    )
+    st.divider()
+    st.markdown("**How it works:**")
+    st.markdown("1. You enter a company name")
+    st.markdown("2. Agent decides what to search")
+    st.markdown("3. Searches web multiple times")
+    st.markdown("4. Writes a professional briefing")
+    st.divider()
+    st.markdown("Built with LangChain · Groq · Streamlit")
+
+# ── Main input ────────────────────────────────────────────────────────
+company = st.text_input(
+    "Enter a company name:",
+    placeholder="e.g. Apple, Stripe, Ryanair, Revolut..."
+)
+
+run_button = st.button("🔍 Research this company", type="primary")
+
+# ── Only run when button is clicked and company is entered ────────────
+if run_button and company:
+
+    # ── Set up the LLM ────────────────────────────────────────────────
+    llm = ChatGroq(
+        model="llama-3.3-70b-versatile",
+        temperature=0,
+        groq_api_key=os.getenv("GROQ_API_KEY")
+    )
+
+    # ── Set up the search tool ────────────────────────────────────────
+    search = DuckDuckGoSearchRun()
+    tools = [
+        Tool(
+            name="web_search",
+            func=search.run,
+            description="""Use this to search the web for current information.
+            Input should be a specific search query string.
+            Use this when you need recent news, financial data,
+            or any facts about a company or topic."""
+        )
+    ]
+
+    # ── Load the ReAct prompt ─────────────────────────────────────────
+    prompt = hub.pull("hwchase17/react")
+
+    # ── Build the agent ───────────────────────────────────────────────
+    agent = create_react_agent(llm, tools, prompt)
+    agent_executor = AgentExecutor(
+        agent=agent,
+        tools=tools,
+        verbose=False,        # we handle display ourselves below
+        max_iterations=max_iter,
+        handle_parsing_errors=True,
+        return_intermediate_steps=True   # lets us show the thinking steps
+    )
+
+    # ── Task definition ───────────────────────────────────────────────
+    task = f"""
+    Research the company '{company}' and write a short analyst briefing.
+
+    Your briefing must include:
+    1. What the company does (1-2 sentences)
+    2. Recent news or developments
+    3. Any financial highlights (revenue, growth, funding)
+    4. One key risk or challenge they face
+    5. Overall outlook — growing, stable, or struggling?
+
+    Use the web_search tool to find this information.
+    Search multiple times if needed to get complete information.
+    Write the final briefing in clear professional language.
+    """
+
+    # ── Run with live status updates ──────────────────────────────────
+    with st.status(f"🔍 Researching {company}...", expanded=True) as status:
+        st.write("Agent is starting up...")
+
+        try:
+            result = agent_executor.invoke({"input": task})
+
+            # Show the thinking steps inside the status box
+            steps = result.get("intermediate_steps", [])
+            for i, (action, observation) in enumerate(steps):
+                st.write(f"**Step {i+1}:** Searched for `{action.tool_input}`")
+                st.caption(f"Found: {str(observation)[:150]}...")
+
+            status.update(
+                label=f"✅ Research complete — {len(steps)} searches performed",
+                state="complete"
+            )
+
+        except Exception as e:
+            status.update(label="❌ Something went wrong", state="error")
+            st.error(f"Error: {str(e)}")
+            st.stop()
+
+    # ── Display the final briefing ────────────────────────────────────
+    st.divider()
+    st.subheader(f"📋 Analyst Briefing: {company}")
+
+    final_answer = result.get("output", "No output generated.")
+
+    if "Agent stopped" in final_answer:
+        st.warning("The agent hit its iteration limit before finishing. Try increasing Max Iterations in the sidebar.")
+    else:
+        st.markdown(final_answer)
+
+    # ── Show full thinking log in expander ────────────────────────────
+    with st.expander("🧠 See full agent thinking log"):
+        steps = result.get("intermediate_steps", [])
+        for i, (action, observation) in enumerate(steps):
+            st.markdown(f"**🔍 Search {i+1}:** `{action.tool_input}`")
+            st.markdown(f"**📄 Result:** {str(observation)[:500]}...")
+            st.divider()
+
+elif run_button and not company:
+    st.warning("Please enter a company name first.")
