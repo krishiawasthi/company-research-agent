@@ -58,7 +58,12 @@ if run_button and company:
     )
 
     # ── Set up the search tool ────────────────────────────────────────
-    search = DuckDuckGoSearchRun()
+    from langchain_community.tools import DuckDuckGoSearchRun
+    from langchain_community.utilities import DuckDuckGoSearchAPIWrapper
+
+    wrapper = DuckDuckGoSearchAPIWrapper(region="en-us", time="m", max_results=5)
+    search = DuckDuckGoSearchRun(api_wrapper=wrapper)
+
     tools = [
         Tool(
             name="web_search",
@@ -88,18 +93,33 @@ if run_button and company:
 
     # ── Task definition ───────────────────────────────────────────────
     task = f"""
-    Research the company '{company}' and write a short analyst briefing.
+    Research '{company}' and write a professional analyst briefing.
+    
+    Use web_search to find information. Search without quotes.
+    Good search example: {company} company overview
+    Bad search example: "{company} company overview"
+    
+    Write the final briefing in this exact format:
 
-    Your briefing must include:
-    1. What the company does (1-2 sentences)
-    2. Recent news or developments
-    3. Any financial highlights (revenue, growth, funding)
-    4. One key risk or challenge they face
-    5. Overall outlook — growing, stable, or struggling?
+    ## {company} — Analyst Briefing
 
-    Use the web_search tool to find this information.
-    Search multiple times if needed to get complete information.
-    Write the final briefing in clear professional language.
+    **Overview**
+    [2 sentences on what the company does]
+
+    **Recent Developments**
+    [2-3 bullet points of recent news]
+
+    **Financial Highlights**
+    [Key revenue, growth, or funding figures]
+
+    **Key Risk**
+    [One main challenge or risk]
+
+    **Outlook**
+    [One sentence — growing, stable, or under pressure]
+
+    Keep it concise, factual, and professional.
+    Only include information you actually found — do not make up figures.
     """
 
     # ── Run with live status updates ──────────────────────────────────
@@ -134,10 +154,12 @@ if run_button and company:
     if "Agent stopped" in final_answer:
         st.warning("The agent hit its iteration limit before finishing. Try increasing Max Iterations in the sidebar.")
     else:
-        st.markdown(final_answer)
+        # Clean up the output — remove any leftover quotes or formatting
+        cleaned = final_answer.strip().strip('"')
+        st.markdown(cleaned)
 
     # ── Show full thinking log in expander ────────────────────────────
-    with st.expander("🧠 See full agent thinking log"):
+    with st.expander("🧠 See agent thinking log (optional)", expanded=False):
         steps = result.get("intermediate_steps", [])
         for i, (action, observation) in enumerate(steps):
             st.markdown(f"**🔍 Search {i+1}:** `{action.tool_input}`")
