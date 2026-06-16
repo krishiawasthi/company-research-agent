@@ -62,9 +62,11 @@ if run_button and company:
     tools = [
         Tool(
             name="web_search",
-            func=search.run,
+            func=lambda q: search.run(q.strip().strip('"').strip("'")),
             description="""Use this to search the web for current information.
-            Input should be a specific search query string.
+            Input should be a plain search query with NO quotes around it.
+            Example: Bata company overview
+            NOT: "Bata company overview"
             Use this when you need recent news, financial data,
             or any facts about a company or topic."""
         )
