@@ -1,6 +1,7 @@
-langchain
-langchain-groq
-langchain-community
+langchain==0.3.7
+langchain-groq==0.2.1
+langchain-community==0.3.7
+langchain-core==0.3.19
 python-dotenv
 streamlit
-duckduckgo-search
+tavily-python
