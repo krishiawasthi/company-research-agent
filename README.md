@@ -3,7 +3,7 @@ title: Company Research Agent
 emoji: 🚀
 colorFrom: red
 colorTo: red
-sdk: docker
+sdk: streamlit
 app_port: 8501
 tags:
 - streamlit
