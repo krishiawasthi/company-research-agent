@@ -12,7 +12,7 @@ tags:
 - tavily
 - ai-agent
 pinned: false
-short_description: Autonomous AI agent that researches companies and generates analyst briefings
+short_description: AI agent for company research and briefings
 ---
 
 # Company Research Agent 🤖
