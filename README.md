@@ -68,13 +68,13 @@ Structured analyst briefing output
 ---
 
 ## Project structure
-
+```
 company-research-agent/
 ├── app.py                 # Main Streamlit app and agent logic
 ├── agent.py               # Agent configuration
 ├── requirements.txt       # Dependencies
 └── README.md
-
+```
 ---
 
 ## Run locally
