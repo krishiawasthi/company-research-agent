@@ -79,16 +79,22 @@ company-research-agent/
 
 ## Run locally
 
+```bash
 git clone https://github.com/krishiawasthi/company-research-agent
 cd company-research-agent
 pip install -r requirements.txt
+```
 
-Create a .env file:
+Create a `.env` file:
+```
 GROQ_API_KEY=your_groq_key
 TAVILY_API_KEY=your_tavily_key
+```
 
 Run:
+```bash
 python3 -m streamlit run app.py
+```
 
 ---
 
